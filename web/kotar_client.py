@@ -43,10 +43,12 @@ class KotarClient(WebClient):
                         if event_name_part in event_name:
                             sold_out = False
                             print("Event '{}' found".format(event_name_part))
-                print("Waiting for 10 seconds")
-                attempts = attempts + 1
-                time.sleep(10)
-                self.driver.refresh()
+                            break
+                if sold_out:
+                    print("Waiting for 10 seconds")
+                    attempts = attempts + 1
+                    time.sleep(10)
+                    self.driver.refresh()
             if not sold_out:
                 self.new_tab('https://youtu.be/QB8NuvDML2I?t=60')
                 time.sleep(30)
