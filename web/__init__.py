@@ -23,6 +23,7 @@ class WebClient(ABC):
         self.chrome_driver_path = self._update_driver(kwargs.get("driver_path", "assets/chromedriver.exe"))
         self.download_time = kwargs.get("download_time", 20)
         options = webdriver.ChromeOptions()
+        options.binary_location = r"C:\Program Files\Google\Chrome\Application\chrome.exe"
         options.add_argument("--disable-notifications")
         options.add_argument("--disable-infobars")
         options.add_argument("download.default_directory={}".format(self.app_temp_directory))
