@@ -1,9 +1,36 @@
 import requests
 import time
+import logging
+import datetime
+import telegram
+from common import TELEGRAM_TOKEN, TELEGRAM_CHAT_ID
+from models import EventDateTime, Event
 from bs4 import BeautifulSoup, Tag
 
+bot = telegram.Bot(token=TELEGRAM_TOKEN)
+logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+                    level=logging.INFO)
 
-def has_tickets(event_name_part):
+
+def get_time(event: Tag) -> EventDateTime:
+    event_date_time = None
+
+    detail_div = event.find("div", {"class": "detail"})
+    if detail_div is not None:
+        time_div = detail_div.find("div", {"class": "text"})
+        if time_div is not None:
+            parts = time_div.text.split("|")
+            if len(parts) == 2:
+                time_parts = parts[0].strip().split("-")
+
+                event_date_time = EventDateTime(start_time=time_parts[0].strip(),
+                                                end_time=time_parts[1].strip(),
+                                                date=datetime.datetime.strptime(parts[1].strip(), "%d.%m.%Y"))
+
+    return event_date_time
+
+
+def has_tickets(event_name_part=None):
     url = "https://www.kotar-rishon-lezion.org.il/events-category/%D7%90%D7%99%D7%A8%D7%95%D7%A2%D7%99%D7%9D-%D7%95%D7%A4%D7%A2%D7%99%D7%9C%D7%99%D7%95%D7%AA/%D7%9B%D7%95%D7%AA%D7%A8-%D7%98%D7%A3-%D7%94%D7%A6%D7%92%D7%95%D7%AA/"
     headers = {
         'Cache-Control': 'no-cache',
@@ -40,10 +67,12 @@ def has_tickets(event_name_part):
 
                 if "אזלו" not in event_name:
                     print("Tickets available for {}".format(event_name))
-                    if event_name_part in event_name:
+                    if event_name_part is None or event_name_part in event_name:
+                        event_data = Event(name=event_name, event_time=get_time(event), url=url)
                         sold_out = False
-                        print("Event '{}' found".format(event_name_part))
-                        break
+                        bot.send_message(chat_id=TELEGRAM_CHAT_ID,
+                                         text="Available Tickets to \n{}".format(str(event_data)))
+                        print("Event '{}' found".format(event_data.name))
 
             if sold_out:
                 print("Waiting for 10 seconds")
@@ -58,4 +87,5 @@ def has_tickets(event_name_part):
     return sold_out
 
 
-has_tickets("יואב")
+# has_tickets("יואב")
+has_tickets()
