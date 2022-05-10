@@ -8,7 +8,8 @@ class EventDateTime(object):
         self.end_time = kwargs.get("end_time", None)
 
     def __str__(self):
-        return "date: {} between {}-{}".format(self.date.strftime("%d.%m.%Y"), self.start_time, self.end_time)
+        return "בתאריך {} בין השעות {}-{}".format(self.date.strftime("%d.%m.%Y"), self.start_time, self.end_time)
+        # return "date: {} between {}-{}".format(self.date.strftime("%d.%m.%Y"), self.start_time, self.end_time)
 
 
 class Event(object):
@@ -18,4 +19,6 @@ class Event(object):
         self.url = kwargs.get("url", None)
 
     def __str__(self):
-        return "Event: {} at {}\n{}".format(self.name, str(self.event_time), self.url)
+        url = "<a href=\"{}\">לחץ כאן</a>".format(self.url)
+        return "מצאתי כרטיסים ל{}\n{}\nלהזמנת כרטיסים: {}".format(self.name, str(self.event_time), url)
+        # return "Event: {} at {}\n{}".format(self.name, str(self.event_time), self.url)

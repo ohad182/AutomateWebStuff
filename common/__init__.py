@@ -6,8 +6,10 @@ APP_DATA = 'APPDATA'
 # TODO: set the telegram bot token and the chat id
 # TELEGRAM Connection based on
 # https://pythoncircle.com/post/265/how-to-create-completely-automated-telegram-channel-with-python/
+
 TELEGRAM_TOKEN = None
 TELEGRAM_CHAT_ID = None
+
 NEW_DRIVER_DATE = datetime.strptime('2019-12-09', '%Y-%m-%d').date()
 
 

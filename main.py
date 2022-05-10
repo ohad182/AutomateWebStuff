@@ -11,6 +11,12 @@ bot = telegram.Bot(token=TELEGRAM_TOKEN)
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
                     level=logging.INFO)
 
+url = "https://www.kotar-rishon-lezion.org.il/events-category/%D7%90%D7%99%D7%A8%D7%95%D7%A2%D7%99%D7%9D-%D7%95%D7%A4%D7%A2%D7%99%D7%9C%D7%99%D7%95%D7%AA/%D7%9B%D7%95%D7%AA%D7%A8-%D7%98%D7%A3-%D7%94%D7%A6%D7%92%D7%95%D7%AA/"
+headers = {
+    'Cache-Control': 'no-cache',
+    'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36'
+}
+
 
 def get_time(event: Tag) -> EventDateTime:
     event_date_time = None
@@ -30,62 +36,82 @@ def get_time(event: Tag) -> EventDateTime:
     return event_date_time
 
 
-def has_tickets(event_name_part=None):
-    url = "https://www.kotar-rishon-lezion.org.il/events-category/%D7%90%D7%99%D7%A8%D7%95%D7%A2%D7%99%D7%9D-%D7%95%D7%A4%D7%A2%D7%99%D7%9C%D7%99%D7%95%D7%AA/%D7%9B%D7%95%D7%AA%D7%A8-%D7%98%D7%A3-%D7%94%D7%A6%D7%92%D7%95%D7%AA/"
-    headers = {
-        'Cache-Control': 'no-cache',
-        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36'
-    }
-
-    # while True:
-    #     print("Checking")
-    #
-    #     events_h2 = soup.find_all("h2")
-    #     for h2 in events_h2:
-    #         if "אזלו"
-    #         print(h2)
-    #     print("Debugging")
-    sold_out = True
+def get_tickets(event_name_part=None):
+    available_tickets = []
     try:
-        attempts = 1
-        max_attempts = 200000
-        while sold_out and attempts < max_attempts:
-            print("Checking for tickets #{}".format(attempts))
-            response = requests.get(url, headers=headers)
-            soup = BeautifulSoup(response.content, "lxml")
-            events = [x for x in soup.find_all("div", class_="event") if
-                      'class' in x.attrs and len(x.attrs['class']) == 1]
-            print("Found {} events".format(len(events)))
+        print("Checking for tickets for {}".format(event_name_part))
+        response = requests.get(url, headers=headers)
+        soup = BeautifulSoup(response.content, "lxml")
+        events = [x for x in soup.find_all("div", class_="event") if
+                  'class' in x.attrs and len(x.attrs['class']) == 1]
+        print("Found {} events".format(len(events)))
 
-            for event in events:
-                event_name = None
-                event_header = event.find("h2")
-                if event_header:
-                    event_name = event_header.text
-                else:
-                    print("Error! unable to get event header")
+        for event in events:
+            event_name = None
+            event_header = event.find("h2")
+            if event_header:
+                event_name = event_header.text
+            else:
+                print("Error! unable to get event header")
 
-                if "אזלו" not in event_name:
-                    print("Tickets available for {}".format(event_name))
-                    if event_name_part is None or event_name_part in event_name:
-                        event_data = Event(name=event_name, event_time=get_time(event), url=url)
-                        sold_out = False
-                        bot.send_message(chat_id=TELEGRAM_CHAT_ID,
-                                         text="Available Tickets to \n{}".format(str(event_data)))
-                        print("Event '{}' found".format(event_data.name))
+            if "אזלו" not in event_name:
+                print("Tickets available for {}".format(event_name))
+                if event_name_part is None or event_name_part in event_name:
+                    event_data = Event(name=event_name, event_time=get_time(event), url=url)
+                    bot.send_message(chat_id=TELEGRAM_CHAT_ID,
+                                     text=str(event_data), parse_mode=telegram.ParseMode.HTML)
+                    print("Event '{}' found".format(event_data.name))
 
-            if sold_out:
-                print("Waiting for 10 seconds")
-                attempts = attempts + 1
-                time.sleep(10)
-        if not sold_out:
-            time.sleep(30)
     except Exception as ex:
         print("Error! {}".format(str(ex)))
         time.sleep(5)
         raise ex
-    return sold_out
+    return available_tickets
+
+
+def app_loop():
+    pass
+    # sold_out = True
+    # try:
+    #     attempts = 1
+    #     max_attempts = 200000
+    #     while sold_out and attempts < max_attempts:
+    #         print("Checking for tickets #{}".format(attempts))
+    #         response = requests.get(url, headers=headers)
+    #         soup = BeautifulSoup(response.content, "lxml")
+    #         events = [x for x in soup.find_all("div", class_="event") if
+    #                   'class' in x.attrs and len(x.attrs['class']) == 1]
+    #         print("Found {} events".format(len(events)))
+    #
+    #         for event in events:
+    #             event_name = None
+    #             event_header = event.find("h2")
+    #             if event_header:
+    #                 event_name = event_header.text
+    #             else:
+    #                 print("Error! unable to get event header")
+    #
+    #             if "אזלו" not in event_name:
+    #                 print("Tickets available for {}".format(event_name))
+    #                 if event_name_part is None or event_name_part in event_name:
+    #                     event_data = Event(name=event_name, event_time=get_time(event), url=url)
+    #                     sold_out = False
+    #                     bot.send_message(chat_id=TELEGRAM_CHAT_ID,
+    #                                      text="Available Tickets to \n{}".format(str(event_data)))
+    #                     print("Event '{}' found".format(event_data.name))
+    #
+    #         if sold_out:
+    #             print("Waiting for 10 seconds")
+    #             attempts = attempts + 1
+    #             time.sleep(10)
+    #     if not sold_out:
+    #         time.sleep(30)
+    # except Exception as ex:
+    #     print("Error! {}".format(str(ex)))
+    #     time.sleep(5)
+    #     raise ex
+    # return sold_out
 
 
 # has_tickets("יואב")
-has_tickets()
+get_tickets()
