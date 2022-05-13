@@ -1,4 +1,4 @@
-selenium==3.141.0
+#selenium==3.141.0
 PyInstaller==3.5
 pytest==5.3.1
 # for not using selenium
@@ -6,3 +6,4 @@ beautifulsoup4>=4.10.0
 requests
 lxml
 python-telegram-bot
+SQLAlchemy
