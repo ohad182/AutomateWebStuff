@@ -2,6 +2,7 @@ import requests
 import logging
 import datetime
 import telegram
+import time
 from argparse import ArgumentParser
 from common import TELEGRAM_TOKEN, TELEGRAM_CHAT_ID
 from database.models import EventDateTime, Event
@@ -20,6 +21,11 @@ headers = {
     'Cache-Control': 'no-cache',
     'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36'
 }
+
+
+def sleep(seconds):
+    print("Waiting for {} seconds".format(seconds))
+    time.sleep(seconds)
 
 
 def get_time(event: Tag) -> EventDateTime:
@@ -80,15 +86,18 @@ def get_tickets(i_event_name=None):
     return available_tickets
 
 
-def app_loop(event_name=None, iterations=-1):
+def app_loop(event_name=None, iterations=-1, wait_period=300):
     if iterations < 1:
         counter = 1
         while True:
             print("Running iteration #{}".format(counter))
             get_tickets(event_name)
             counter += 1
+            sleep(wait_period)
     else:
         for i in range(iterations):
+            if i > 0:
+                sleep(wait_period)
             print("Running iteration #{}".format(i + 1))
             get_tickets(event_name)
 
@@ -96,9 +105,10 @@ def app_loop(event_name=None, iterations=-1):
 def main():
     arg_parser = ArgumentParser(description="Kotar Events Checker")
     arg_parser.add_argument("--iterations", type=int, help="The number of iterations to run", default=1)
+    arg_parser.add_argument("--wait_period", type=int, help="How many seconds to wait between attempts", default=300)
     arg_parser.add_argument("--event_name", type=str, help="The name of the event", default=None)
     parsed = arg_parser.parse_args()
-    app_loop(parsed.event_name, parsed.iterations)
+    app_loop(**vars(parsed))
 
 
 if __name__ == '__main__':
