@@ -16,10 +16,7 @@ def create_temp_folder(notify: bool):
     app_data = os.getenv(APP_DATA)
     if app_data is not None:
         app_data = os.path.join(app_data, APP_NAME)
-        try:
-            os.makedirs(app_data)
-        except:
-            pass
+        os.makedirs(app_data, exist_ok=True)
 
     if notify:
         print("App temp directory: {}".format(app_data))
@@ -112,7 +109,7 @@ class Singleton(type):
 
 
 class AppDir(object, metaclass=Singleton):
-    def __init__(self, **kwargs):
+    def __init__(self):
         self.app_directory = self.create_app_dir(True)
 
     def create_app_dir(self, notify: bool):
