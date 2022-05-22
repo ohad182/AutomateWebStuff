@@ -12,7 +12,11 @@ from database import dal
 
 create_all()
 
-bot = telegram.Bot(token=TELEGRAM_TOKEN)
+if TELEGRAM_TOKEN is None:
+    bot = None
+    print("Telegram bot is unavailable, please make sure you set the TELEGRAM_TOKEN variable")
+else:
+    bot = telegram.Bot(token=TELEGRAM_TOKEN)
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
                     level=logging.INFO)
 
@@ -21,6 +25,14 @@ headers = {
     'Cache-Control': 'no-cache',
     'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36'
 }
+
+
+def send_bot(message):
+    if bot is not None:
+        bot.send_message(chat_id=TELEGRAM_CHAT_ID,
+                         text=message, parse_mode=telegram.ParseMode.HTML)
+    else:
+        print("No Bot Available: {}".format(message))
 
 
 def sleep(seconds):
@@ -72,16 +84,16 @@ def get_tickets(i_event_name=None):
                     available_tickets.append(event_data)
                     if not dal.event_exists(event_data):
                         print(str(event_data))
-                        dal.add_event(event_data)
-                        bot.send_message(chat_id=TELEGRAM_CHAT_ID,
-                                         text=str(event_data), parse_mode=telegram.ParseMode.HTML)
+                        send_bot(str(event_data))
                         print("Event '{}' found".format(event_data.name))
+                        dal.add_event(event_data)
                     else:
                         print("Event {} already notified".format(event_name))
             else:
                 print("No tickets: {}".format(event_name))
     except Exception as ex:
         print("Error! {}".format(str(ex)))
+        send_bot("Error! {}".format(str(ex)))
         raise ex
     return available_tickets
 
