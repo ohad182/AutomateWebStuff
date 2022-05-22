@@ -4,39 +4,41 @@ import datetime
 import telegram
 import time
 from argparse import ArgumentParser
-from common import TELEGRAM_TOKEN, TELEGRAM_CHAT_ID
+
+import common
 from database.models import EventDateTime, Event
 from bs4 import BeautifulSoup, Tag
 from database.base import create_all
 from database import dal
 
-create_all()
-
-if TELEGRAM_TOKEN is None:
-    bot = None
-    print("Telegram bot is unavailable, please make sure you set the TELEGRAM_TOKEN variable")
-else:
-    bot = telegram.Bot(token=TELEGRAM_TOKEN)
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-                    level=logging.INFO)
-
+                    level=logging.DEBUG)
+logger = logging.getLogger(common.APP_NAME)
 url = "https://www.kotar-rishon-lezion.org.il/events-category/%D7%90%D7%99%D7%A8%D7%95%D7%A2%D7%99%D7%9D-%D7%95%D7%A4%D7%A2%D7%99%D7%9C%D7%99%D7%95%D7%AA/%D7%9B%D7%95%D7%AA%D7%A8-%D7%98%D7%A3-%D7%94%D7%A6%D7%92%D7%95%D7%AA/"
 headers = {
     'Cache-Control': 'no-cache',
     'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36'
 }
 
+create_all()
+
+if common.TELEGRAM_TOKEN is None:
+    bot = None
+    logger.error("Telegram bot is unavailable, please make sure you set the TELEGRAM_TOKEN variable")
+else:
+    bot = telegram.Bot(token=common.TELEGRAM_TOKEN)
+
 
 def send_bot(message):
     if bot is not None:
-        bot.send_message(chat_id=TELEGRAM_CHAT_ID,
+        bot.send_message(chat_id=common.TELEGRAM_CHAT_ID,
                          text=message, parse_mode=telegram.ParseMode.HTML)
     else:
-        print("No Bot Available: {}".format(message))
+        logger.warning("No Bot Available: {}".format(message))
 
 
 def sleep(seconds):
-    print("Waiting for {} seconds".format(seconds))
+    logger.debug("Waiting for {} seconds".format(seconds))
     time.sleep(seconds)
 
 
@@ -62,12 +64,12 @@ def get_time(event: Tag) -> EventDateTime:
 def get_tickets(i_event_name=None):
     available_tickets = []
     try:
-        print("searching for tickets for {}".format(i_event_name if i_event_name is not None else "all events"))
+        logger.info("searching for tickets for {}".format(i_event_name if i_event_name is not None else "all events"))
         response = requests.get(url, headers=headers)
         soup = BeautifulSoup(response.content, "lxml")
         events = [x for x in soup.find_all("div", class_="event") if
                   'class' in x.attrs and len(x.attrs['class']) == 1]
-        print("Found {} events".format(len(events)))
+        logger.info("Found {} events".format(len(events)))
 
         for event in events:
             event_name = None
@@ -75,24 +77,24 @@ def get_tickets(i_event_name=None):
             if event_header:
                 event_name = event_header.text
             else:
-                print("Error! unable to get event header")
+                logger.error("Error! unable to get event header")
 
             if "אזלו" not in event_name:
-                print("Tickets available for {}".format(event_name))
+                logger.info("Tickets available for {}".format(event_name))
                 if i_event_name is None or i_event_name in event_name:
                     event_data = Event(name=event_name, url=url, time=get_time(event))
                     available_tickets.append(event_data)
                     if not dal.event_exists(event_data):
-                        print(str(event_data))
+                        logger.info(str(event_data))
                         send_bot(str(event_data))
-                        print("Event '{}' found".format(event_data.name))
+                        logger.info("Event '{}' found".format(event_data.name))
                         dal.add_event(event_data)
                     else:
-                        print("Event {} already notified".format(event_name))
+                        logger.info("Event {} already notified".format(event_name))
             else:
-                print("No tickets: {}".format(event_name))
+                logger.info("No tickets: {}".format(event_name))
     except Exception as ex:
-        print("Error! {}".format(str(ex)))
+        logger.error("Error! {}".format(str(ex)))
         send_bot("Error! {}".format(str(ex)))
         raise ex
     return available_tickets
@@ -102,7 +104,7 @@ def app_loop(event_name=None, iterations=-1, wait_period=300):
     if iterations < 1:
         counter = 1
         while True:
-            print("Running iteration #{}".format(counter))
+            logger.info("Running iteration #{}".format(counter))
             get_tickets(event_name)
             counter += 1
             sleep(wait_period)
@@ -110,7 +112,7 @@ def app_loop(event_name=None, iterations=-1, wait_period=300):
         for i in range(iterations):
             if i > 0:
                 sleep(wait_period)
-            print("Running iteration #{}".format(i + 1))
+            logger.info("Running iteration #{}".format(i + 1))
             get_tickets(event_name)
 
 
